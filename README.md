@@ -28,8 +28,8 @@ Call `common_find_package` function. Its arguments are:
 * `SUFFIXES` (;-list of strings): directory names to pass as `PATH_SUFFIXES` to `find_path` and `find_library`
 * `VERSION_HEADER` (string, default: same as `HEADER`): name of header file from which to extract version informations
 * `VERSION_REGEXPES` (;-list of strings): one or more regexp to extract version number(s) from header file.
-#   - use a single regexp for a dotted version (major.minor.patch) or a numeric version number (eg: 50630)
-#   - provide 3 regexpes if major/minor/patch are on seperated lines/macros
+    + use a single regexp for a dotted version (major.minor.patch) or a numeric version number (eg: 50630)
+    + provide 3 regexpes if major/minor/patch are on seperated lines/macros
 
 
 See CMakeLists.txt for examples.
