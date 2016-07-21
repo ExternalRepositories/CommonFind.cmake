@@ -1,11 +1,13 @@
 cmake_minimum_required(VERSION 2.8.3)
 
+set(CMAKE_FIND_DEBUG_MODE TRUE)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
 
 function(debug PREFIX)
     set(SUFFIXES "FOUND" "VERSION" "VERSION_MAJOR" "VERSION_MINOR" "VERSION_PATCH" "LIBRARY" "LIBRARIES" "INCLUDE_DIR" "INCLUDE_DIRS")
+#     list(APPEND SUFFIXES "FIND_VERSION" "FIND_VERSION_EXACT" "FIND_COMPONENTS" "FIND_REQUIRED" "FIND_QUIETLY")
     if(MSVC)
-        list(APPEND SUFFIXES "LIBRARY_RELEASE LIBRARY_DEBUG")
+        list(APPEND SUFFIXES "LIBRARY_RELEASE" "LIBRARY_DEBUG")
     endif(MSVC)
     foreach(SUFFIX ${SUFFIXES})
         if(DEFINED ${PREFIX}_${SUFFIX})
@@ -39,20 +41,8 @@ common_find_package(
 )
 debug("XXX")
 
-common_find_package(
-    REQUIRED
-    NAME MySQL
-    SUFFIXES mysql
-    LIBRARIES mysqlclient # needs PATH_SUFFIXES mysql?
-    HEADER mysql_version.h
-    OUTPUT_VARIABLE_NAME "MYSQL"
-    PKG_CONFIG_MODULE_NAME mysqlclient
-    CONFIG_EXECUTABLE mysql_config
-        CONFIG_EXECUTABLE_LIBRARIES_ARGUMENTS "--variable=pkglibdir"
-        CONFIG_EXECUTABLE_INCLUDE_ARGUMENTS "--variable=pkgincludedir"
-    VERSION_REGEXPES "#[ \t]*define[ \t]+MYSQL_VERSION_ID[ \t]+([0-9]+)"
-)
-debug("MYSQL")
+find_package(MySQL 5.5 REQUIRED)
+debug("MySQL")
 
 common_find_package(
     REQUIRED
@@ -74,3 +64,8 @@ common_find_package(
     VERSION_REGEXPES "# *define *SQLITE_VERSION *\"([0-9.]+)\""
 )
 debug("SQLITE3")
+
+get_cmake_property(PACKAGES_FOUND PACKAGES_FOUND)
+message("PACKAGES_FOUND = ${PACKAGES_FOUND}")
+get_cmake_property(PACKAGES_NOT_FOUND PACKAGES_NOT_FOUND)
+message("PACKAGES_NOT_FOUND = ${PACKAGES_NOT_FOUND}")

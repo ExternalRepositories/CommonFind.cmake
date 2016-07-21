@@ -4,13 +4,11 @@
 # - CMake >= 2.8.3 (for new version of find_package_handle_standard_args)
 #
 # Prototype:
-#   common_find_package([QUIET] [REQUIRED] [NAME <name>] [OUTPUT_VARIABLE_NAME <prefix>] [LIBRARIES <list of names>] [HEADER <name>] [SUFFIXES <list of suffixes>]
+#   common_find_package([NAME <name>] [OUTPUT_VARIABLE_NAME <prefix>] [LIBRARIES <list of names>] [HEADER <name>] [SUFFIXES <list of suffixes>]
 #                       [PKG_CONFIG_MODULE_NAME <name>]
 #                       [VERSION_HEADER <name>] [VERSION_REGEXPES <list of regexpes>]
 #                       [CONFIG_EXECUTABLE <name>] [CONFIG_EXECUTABLE_LIBRARY_ARGUMENTS <list of arguments>] [CONFIG_EXECUTABLE_INCLUDE_ARGUMENTS <list of arguments>])
 # Arguments:
-#   - QUIET (default): silently tries to find the given library
-#   - REQUIRED: if the library can't be found, emits a fatal error
 #   - OUTPUT_VARIABLE_NAME (mandatory): base name of output variables
 #   - NAME (mandatory): name (used to define imported targets, as ${NAME}::${NAME}, for CMake >= 3.0.0)
 #   - PKG_CONFIG_MODULE_NAME: name of pkg-config to check (if provided)
@@ -46,7 +44,7 @@ function(common_find_package)
     cmake_parse_arguments(
         PARSED_ARGS # output variable name
         # options (true/false) (default value: false)
-        "REQUIRED;QUIET"
+        ""
         # univalued parameters (default value: "")
         "NAME;OUTPUT_VARIABLE_NAME;PKG_CONFIG_MODULE_NAME;HEADER;CONFIG_EXECUTABLE;VERSION_HEADER"
         # multivalued parameters (default value: "")
@@ -56,8 +54,16 @@ function(common_find_package)
 
     # TODO:
     # - parse ${PC_VAR_NS}_VERSION
-    # - set _FIND_REQUIRED, _FIND_QUIETLY, _FIND_VERSION, _FIND_VERSION_EXACT
-    # - exact/minimum/... version and we need to pass the version to find_package_handle_standard_args (as variable?)
+
+    # <test/temporary>
+    if(NOT PARSED_ARGS_OUTPUT_VARIABLE_NAME)
+        get_directory_property(LISTFILE_STACK LISTFILE_STACK)
+        list(GET LISTFILE_STACK -2 FIND_MODULE_FILENAME)
+        get_filename_component(FIND_MODULE_NAME_WE ${FIND_MODULE_FILENAME} NAME_WE)
+        string(REGEX REPLACE "^[fF][iI][nN][dD]" "" FIND_MODULE_STRIPPED_NAME "${FIND_MODULE_NAME_WE}")
+        set(PARSED_ARGS_OUTPUT_VARIABLE_NAME "${FIND_MODULE_STRIPPED_NAME}")
+    endif(NOT PARSED_ARGS_OUTPUT_VARIABLE_NAME)
+    # </test/temporary>
 
     # <argument validation>
     set(MANDATORY_ARGUMENTS "NAME" "OUTPUT_VARIABLE_NAME" "LIBRARIES" "HEADER")
@@ -66,9 +72,6 @@ function(common_find_package)
             message(FATAL_ERROR "${__FUNCTION__}: argument ${ARGUMENT} is not set")
         endif(NOT PARSED_ARGS_${ARGUMENT})
     endforeach(ARGUMENT)
-    if(PARSED_ARGS_REQUIRED AND PARSED_ARGS_QUIET)
-        message(FATAL_ERROR "${__FUNCTION__}: argument REQUIRED and QUIET are mutually exclusive")
-    endif(PARSED_ARGS_REQUIRED AND PARSED_ARGS_QUIET)
     # </argument validation>
 
     set(PC_VAR_NS "PC_${PARSED_ARGS_OUTPUT_VARIABLE_NAME}")
@@ -211,15 +214,15 @@ function(common_find_package)
 
     # Check find_package arguments
     include(FindPackageHandleStandardArgs)
-    if(PARSED_ARGS_REQUIRED)
+    if(${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_FIND_REQUIRED)
         find_package_handle_standard_args(
             ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}
             REQUIRED_VARS ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_LIBRARY ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_INCLUDE_DIR
             VERSION_VAR ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION
         )
-    else(PARSED_ARGS_REQUIRED)
+    else(${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_FIND_REQUIRED)
         find_package_handle_standard_args(${PARSED_ARGS_OUTPUT_VARIABLE_NAME} "Could NOT find ${PARSED_ARGS_NAME}" ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_LIBRARY ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_INCLUDE_DIR)
-    endif(PARSED_ARGS_REQUIRED)
+    endif(${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_FIND_REQUIRED)
 
     if(${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_FOUND)
         set(VARIABLES_TO_EXPORT "FOUND" "VERSION" "VERSION_MAJOR" "VERSION_MINOR" "VERSION_PATCH")
