@@ -57,11 +57,15 @@ function(common_find_package)
 
     # <test/temporary>
     if(NOT PARSED_ARGS_OUTPUT_VARIABLE_NAME)
-        get_directory_property(LISTFILE_STACK LISTFILE_STACK)
-        list(GET LISTFILE_STACK -2 FIND_MODULE_FILENAME)
-        get_filename_component(FIND_MODULE_NAME_WE ${FIND_MODULE_FILENAME} NAME_WE)
-        string(REGEX REPLACE "^[fF][iI][nN][dD]" "" FIND_MODULE_STRIPPED_NAME "${FIND_MODULE_NAME_WE}")
-        set(PARSED_ARGS_OUTPUT_VARIABLE_NAME "${FIND_MODULE_STRIPPED_NAME}")
+        if(NOT CMAKE_VERSION VERSION_LESS "2.8.10")
+            set(PARSED_ARGS_OUTPUT_VARIABLE_NAME ${CMAKE_FIND_PACKAGE_NAME})
+        else(NOT CMAKE_VERSION VERSION_LESS "2.8.10")
+            get_directory_property(LISTFILE_STACK LISTFILE_STACK)
+            list(GET LISTFILE_STACK -2 FIND_MODULE_FILENAME)
+            get_filename_component(FIND_MODULE_NAME_WE ${FIND_MODULE_FILENAME} NAME_WE)
+            string(REGEX REPLACE "^[fF][iI][nN][dD]" "" FIND_MODULE_STRIPPED_NAME "${FIND_MODULE_NAME_WE}")
+            set(PARSED_ARGS_OUTPUT_VARIABLE_NAME "${FIND_MODULE_STRIPPED_NAME}")
+        endif(NOT CMAKE_VERSION VERSION_LESS "2.8.10")
     endif(NOT PARSED_ARGS_OUTPUT_VARIABLE_NAME)
     # </test/temporary>
 
