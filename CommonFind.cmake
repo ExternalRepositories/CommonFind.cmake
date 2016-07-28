@@ -9,7 +9,6 @@
 #                       [VERSION_HEADER <name>] [VERSION_REGEXPES <list of regexpes>]
 #                       [CONFIG_EXECUTABLE <name>] [CONFIG_EXECUTABLE_LIBRARY_ARGUMENTS <list of arguments>] [CONFIG_EXECUTABLE_INCLUDE_ARGUMENTS <list of arguments>])
 # Arguments:
-#   - OUTPUT_VARIABLE_NAME (mandatory): base name of output variables
 #   - NAME (mandatory): name (used to define imported targets, as ${NAME}::${NAME}, for CMake >= 3.0.0)
 #   - PKG_CONFIG_MODULE_NAME: name of pkg-config to check (if provided)
 #   - CONFIG_EXECUTABLE: name of an external executable from which informations can be extracted
@@ -21,7 +20,7 @@
 #   - VERSION_HEADER (default: same as HEADER): the name of header file from which to extract version informations
 #   - VERSION_REGEXPES: one or more regexp to extract version number(s) from header file. Notes:
 #       + use a single regexp for a dotted version (major.minor.patch) or a numeric version number (eg: 50630)
-#       + provide 3 regexpes if major/minor/patch are on seperated lines/macros
+#       + provide 2 to 4 regexpes if major/minor(/patch/tweak) are on seperated lines/macros
 #
 
 
@@ -46,34 +45,30 @@ function(common_find_package)
         # options (true/false) (default value: false)
         ""
         # univalued parameters (default value: "")
-        "NAME;OUTPUT_VARIABLE_NAME;PKG_CONFIG_MODULE_NAME;HEADER;CONFIG_EXECUTABLE;VERSION_HEADER"
+        "PKG_CONFIG_MODULE_NAME;HEADER;CONFIG_EXECUTABLE;VERSION_HEADER"
         # multivalued parameters (default value: "")
         "LIBRARIES;SUFFIXES;CONFIG_EXECUTABLE_LIBRARY_ARGUMENTS;CONFIG_EXECUTABLE_INCLUDE_ARGUMENTS;VERSION_REGEXPES"
         ${ARGN}
     )
 
     # TODO:
-    # - parse ${PC_VAR_NS}_VERSION
+    # - replace NAME and OUTPUT_VARIABLE_NAME variables?
 
     # <test/temporary>
-    if(NOT PARSED_ARGS_OUTPUT_VARIABLE_NAME)
-        if(NOT CMAKE_VERSION VERSION_LESS "2.8.10")
-            set(PARSED_ARGS_OUTPUT_VARIABLE_NAME ${CMAKE_FIND_PACKAGE_NAME})
-        else(NOT CMAKE_VERSION VERSION_LESS "2.8.10")
-            get_directory_property(LISTFILE_STACK LISTFILE_STACK)
-            list(GET LISTFILE_STACK -2 FIND_MODULE_FILENAME)
-            get_filename_component(FIND_MODULE_NAME_WE ${FIND_MODULE_FILENAME} NAME_WE)
-            string(REGEX REPLACE "^[fF][iI][nN][dD]" "" FIND_MODULE_STRIPPED_NAME "${FIND_MODULE_NAME_WE}")
-            set(PARSED_ARGS_OUTPUT_VARIABLE_NAME "${FIND_MODULE_STRIPPED_NAME}")
-        endif(NOT CMAKE_VERSION VERSION_LESS "2.8.10")
-    endif(NOT PARSED_ARGS_OUTPUT_VARIABLE_NAME)
-    if(NOT PARSED_ARGS_NAME)
-        set(PARSED_ARGS_NAME ${PARSED_ARGS_OUTPUT_VARIABLE_NAME})
-    endif(NOT PARSED_ARGS_NAME)
+    if(DEFINED CMAKE_FIND_PACKAGE_NAME) # CMake >= 2.8.10
+        set(PARSED_ARGS_OUTPUT_VARIABLE_NAME ${CMAKE_FIND_PACKAGE_NAME})
+    else(DEFINED CMAKE_FIND_PACKAGE_NAME)
+        get_directory_property(LISTFILE_STACK LISTFILE_STACK)
+        list(GET LISTFILE_STACK -2 FIND_MODULE_FILENAME)
+        get_filename_component(FIND_MODULE_NAME_WE ${FIND_MODULE_FILENAME} NAME_WE)
+        string(REGEX REPLACE "^[fF][iI][nN][dD]" "" FIND_MODULE_STRIPPED_NAME "${FIND_MODULE_NAME_WE}")
+        set(PARSED_ARGS_OUTPUT_VARIABLE_NAME "${FIND_MODULE_STRIPPED_NAME}")
+    endif(DEFINED CMAKE_FIND_PACKAGE_NAME)
+    set(PARSED_ARGS_NAME ${PARSED_ARGS_OUTPUT_VARIABLE_NAME})
     # </test/temporary>
 
     # <argument validation>
-    set(MANDATORY_ARGUMENTS #[["NAME" "OUTPUT_VARIABLE_NAME"]] "LIBRARIES" "HEADER")
+    set(MANDATORY_ARGUMENTS "LIBRARIES" "HEADER")
     foreach(ARGUMENT ${MANDATORY_ARGUMENTS})
         if(NOT PARSED_ARGS_${ARGUMENT})
             message(FATAL_ERROR "${__FUNCTION__}: argument ${ARGUMENT} is not set")
@@ -103,7 +98,21 @@ function(common_find_package)
             pkg_check_modules(${PC_VAR_NS} ${PARSED_ARGS_PKG_CONFIG_MODULE_NAME} QUIET)
             if(${PC_VAR_NS}_FOUND)
                 if(${PC_VAR_NS}_VERSION)
-                    # TODO: set dotted version
+                    set(${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION "${${PC_VAR_NS}_VERSION}")
+                    string(REGEX MATCHALL "[0-9]+" VERSION_PARTS "${${PC_VAR_NS}_VERSION}")
+                    if(VERSION_PARTS)
+                        list(LENGTH VERSION_PARTS VERSION_PARTS_LENGTH)
+                        list(GET VERSION_PARTS 0 ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION_MAJOR)
+                        if(VERSION_PARTS_LENGTH GREATER 1)
+                            list(GET VERSION_PARTS 1 ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION_MINOR)
+                        endif(VERSION_PARTS_LENGTH GREATER 1)
+                        if(VERSION_PARTS_LENGTH GREATER 2)
+                            list(GET VERSION_PARTS 2 ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION_PATCH)
+                        endif(VERSION_PARTS_LENGTH GREATER 2)
+                        if(VERSION_PARTS_LENGTH GREATER 3)
+                            list(GET VERSION_PARTS 3 ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION_TWEAK)
+                        endif(VERSION_PARTS_LENGTH GREATER 3)
+                    endif(VERSION_PARTS)
                 endif(${PC_VAR_NS}_VERSION)
             endif(${PC_VAR_NS}_FOUND)
         endif(PKG_CONFIG_FOUND)
@@ -131,7 +140,7 @@ function(common_find_package)
     if(${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_INCLUDE_DIR AND NOT ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION)
         list(LENGTH PARSED_ARGS_VERSION_REGEXPES PARSED_ARGS_VERSION_REGEXPES_LENGTH)
         if(PARSED_ARGS_VERSION_REGEXPES_LENGTH EQUAL 0)
-            # TODO: error
+#             message(FATAL_ERROR "${__FUNCTION__}: argument VERSION_REGEXPES is not set")
         elseif(PARSED_ARGS_VERSION_REGEXPES_LENGTH EQUAL 1)
             # s'il n'y a qu'une regexp, c'est un numéro de version numérique (52301) ou sous forme dottée (5.23.01)
             file(STRINGS "${${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_INCLUDE_DIR}/${PARSED_ARGS_VERSION_HEADER}" VERSION_NUMBER_DEFINITION LIMIT_COUNT 1 REGEX ".*${PARSED_ARGS_VERSION_REGEXPES}.*")
@@ -156,9 +165,19 @@ function(common_find_package)
             else(VERSION_NUMBER MATCHES "^[0-9]+$")
                 set(${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION "${VERSION_NUMBER}")
                 string(REGEX MATCHALL "[0-9]+" VERSION_PARTS "${VERSION_NUMBER}")
-                list(GET VERSION_PARTS 0 ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION_MAJOR)
-                list(GET VERSION_PARTS 1 ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION_MINOR)
-                list(GET VERSION_PARTS 2 ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION_PATCH)
+                if(VERSION_PARTS)
+                    list(LENGTH VERSION_PARTS VERSION_PARTS_LENGTH)
+                    list(GET VERSION_PARTS 0 ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION_MAJOR)
+                    if(VERSION_PARTS_LENGTH GREATER 1)
+                        list(GET VERSION_PARTS 1 ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION_MINOR)
+                    endif(VERSION_PARTS_LENGTH GREATER 1)
+                    if(VERSION_PARTS_LENGTH GREATER 2)
+                        list(GET VERSION_PARTS 2 ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION_PATCH)
+                    endif(VERSION_PARTS_LENGTH GREATER 2)
+                    if(VERSION_PARTS_LENGTH GREATER 3)
+                        list(GET VERSION_PARTS 3 ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION_TWEAK)
+                    endif(VERSION_PARTS_LENGTH GREATER 3)
+                endif(VERSION_PARTS)
             endif(VERSION_NUMBER MATCHES "^[0-9]+$")
         else() # > 1
             # s'il y en a plusieurs, les major/minor/patch sont sur plusieurs lignes/instructions (lire le fichier puis autant de string(REGEX REPLACE ...)
@@ -176,6 +195,11 @@ function(common_find_package)
                 string(REGEX REPLACE ".*${VERSION_PATCH_REGEXP}.*" "\\1" ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION_PATCH ${HEADER_CONTENT})
                 set(${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION "${${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION}.${${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION_PATCH}")
             endif(PARSED_ARGS_VERSION_REGEXPES_LENGTH GREATER 2)
+            if(PARSED_ARGS_VERSION_REGEXPES_LENGTH GREATER 3)
+                list(GET PARSED_ARGS_VERSION_REGEXPES 1 VERSION_TWEAK_REGEXP)
+                string(REGEX REPLACE ".*${VERSION_TWEAK_REGEXP}.*" "\\1" ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION_TWEAK ${HEADER_CONTENT})
+                set(${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION "${${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION}.${${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION_TWEAK}")
+            endif(PARSED_ARGS_VERSION_REGEXPES_LENGTH GREATER 3)
         endif()
     endif(${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_INCLUDE_DIR AND NOT ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION)
 
