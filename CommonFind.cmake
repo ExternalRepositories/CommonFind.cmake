@@ -67,10 +67,13 @@ function(common_find_package)
             set(PARSED_ARGS_OUTPUT_VARIABLE_NAME "${FIND_MODULE_STRIPPED_NAME}")
         endif(NOT CMAKE_VERSION VERSION_LESS "2.8.10")
     endif(NOT PARSED_ARGS_OUTPUT_VARIABLE_NAME)
+    if(NOT PARSED_ARGS_NAME)
+        set(PARSED_ARGS_NAME ${PARSED_ARGS_OUTPUT_VARIABLE_NAME})
+    endif(NOT PARSED_ARGS_NAME)
     # </test/temporary>
 
     # <argument validation>
-    set(MANDATORY_ARGUMENTS "NAME" "OUTPUT_VARIABLE_NAME" "LIBRARIES" "HEADER")
+    set(MANDATORY_ARGUMENTS #[["NAME" "OUTPUT_VARIABLE_NAME"]] "LIBRARIES" "HEADER")
     foreach(ARGUMENT ${MANDATORY_ARGUMENTS})
         if(NOT PARSED_ARGS_${ARGUMENT})
             message(FATAL_ERROR "${__FUNCTION__}: argument ${ARGUMENT} is not set")
