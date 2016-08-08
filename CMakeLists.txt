@@ -28,7 +28,7 @@ include(CommonFind)
 find_package(XXX QUIET)
 debug("XXX")
 
-find_package(MySQL 5.5 REQUIRED)
+find_package(MySQL #[[5.5 REQUIRED]])
 debug("MySQL")
 
 find_package(PCRE QUIET)
@@ -40,7 +40,16 @@ debug("Editline")
 find_package(SQLite3 QUIET)
 debug("SQLite3")
 
+find_package(Hiredis QUIET)
+debug("Hiredis")
+
+find_package(libMemcached QUIET)
+debug("libMemcached")
+
 get_cmake_property(PACKAGES_FOUND PACKAGES_FOUND)
 message("PACKAGES_FOUND = ${PACKAGES_FOUND}")
 get_cmake_property(PACKAGES_NOT_FOUND PACKAGES_NOT_FOUND)
 message("PACKAGES_NOT_FOUND = ${PACKAGES_NOT_FOUND}")
+
+println()
+add_subdirectory(test)
