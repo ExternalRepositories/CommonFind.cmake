@@ -4,12 +4,11 @@
 # - CMake >= 2.8.3 (for new version of find_package_handle_standard_args)
 #
 # Prototype:
-#   common_find_package([NAME <name>] [OUTPUT_VARIABLE_NAME <prefix>] [LIBRARIES <list of names>] [HEADER <name>] [SUFFIXES <list of suffixes>]
+#   common_find_package([LIBRARIES <list of names>] [HEADER <name>] [SUFFIXES <list of suffixes>]
 #                       [PKG_CONFIG_MODULE_NAME <name>]
 #                       [VERSION_HEADER <name>] [VERSION_REGEXPES <list of regexpes>]
 #                       [CONFIG_EXECUTABLE <name>] [CONFIG_EXECUTABLE_LIBRARY_ARGUMENTS <list of arguments>] [CONFIG_EXECUTABLE_INCLUDE_ARGUMENTS <list of arguments>])
 # Arguments:
-#   - NAME (mandatory): name (used to define imported targets, as ${NAME}::${NAME}, for CMake >= 3.0.0)
 #   - PKG_CONFIG_MODULE_NAME: name of pkg-config to check (if provided)
 #   - CONFIG_EXECUTABLE: name of an external executable from which informations can be extracted
 #   - CONFIG_EXECUTABLE_LIBRARY_ARGUMENTS (default: --libs): list of arguments to pass to ${CONFIG_EXECUTABLE} to get library path
