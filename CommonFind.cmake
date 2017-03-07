@@ -180,7 +180,7 @@ function(common_find_package)
             endif(VERSION_NUMBER MATCHES "^[0-9]+$")
         else() # > 1
             # s'il y en a plusieurs, les major/minor/patch sont sur plusieurs lignes/instructions (lire le fichier puis autant de string(REGEX REPLACE ...)
-            file(READ "${${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_INCLUDE_DIR}/${PARSED_ARGS_HEADER}" HEADER_CONTENT)
+            file(READ "${${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_INCLUDE_DIR}/${PARSED_ARGS_VERSION_HEADER}" HEADER_CONTENT)
             list(GET PARSED_ARGS_VERSION_REGEXPES 0 VERSION_MAJOR_REGEXP)
             string(REGEX REPLACE ".*${VERSION_MAJOR_REGEXP}.*" "\\1" ${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION_MAJOR ${HEADER_CONTENT})
             set(${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION "${${PARSED_ARGS_OUTPUT_VARIABLE_NAME}_VERSION_MAJOR}")
